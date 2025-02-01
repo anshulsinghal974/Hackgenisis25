@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>OpenStreetMap - Closest Marker Finder</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 50px; bottom: 0; width: 100%; }
+        #info { position: absolute; background: white; padding: 10px; z-index: 1; margin: 10px; border-radius: 8px; top: 0; left: 0; right: 0; text-align: center; }
+    </style>
+</head>
+<body>
+<div id="info">Finding closest marker...</div>
+<div id="map"></div>
+
+<script>
+    // Ahmedabad coordinates
+    const ahmedabadCenter = [23.0225, 72.5714];
+
+    // Initialize the map
+    const map = L.map('map').setView(ahmedabadCenter, 12);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Generate 50 random markers around Ahmedabad
+    const markers = [];
+    for (let i = 0; i < 50; i++) {
+        const lng = 72.45 + Math.random() * 0.25; // Random longitude near Ahmedabad
+        const lat = 22.95 + Math.random() * 0.15; // Random latitude near Ahmedabad
+
+        const marker = L.marker([lat, lng], { icon: L.icon({ iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png' }) }).addTo(map);
+
+        markers.push({ lng, lat, marker });
+    }
+
+    // Haversine formula to calculate distance between two coordinates
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // Distance in km
+    }
+
+    // Find user's current location
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            const userLng = position.coords.longitude;
+            const userLat = position.coords.latitude;
+
+            // Add a marker for user's location
+            const userMarker = L.marker([userLat, userLng], { icon: L.icon({ iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-blue.png' }) }).addTo(map);
+
+            // Find the closest marker
+            let closestMarker = null;
+            let minDistance = Infinity;
+
+            markers.forEach(m => {
+                const distance = calculateDistance(userLat, userLng, m.lat, m.lng);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestMarker = m;
+                }
+            });
+
+            // Highlight the closest marker
+            if (closestMarker) {
+                closestMarker.marker.setIcon(L.icon({ iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-green.png' }));
+                document.getElementById('info').innerText = 
+                    `Closest marker is ${minDistance.toFixed(2)} km away.`;
+            }
+
+            // Fit map bounds to include both user location and closest marker
+            const bounds = L.latLngBounds([
+                [userLat, userLng],
+                [closestMarker.lat, closestMarker.lng]
+            ]);
+            map.fitBounds(bounds, { padding: [50, 50] });
+
+        }, () => {
+            document.getElementById('info').innerText = 'Unable to get your location.';
+        });
+    } else {
+        document.getElementById('info').innerText = 'Geolocation is not supported by your browser.';
+    }
+</script>
+</body>
+</html>
