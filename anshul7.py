@@ -534,5 +534,7 @@ class HOPEBRIDGE(App):
         return sm
 
     
-if _name_ == "_main_":
+if __name__ == "_main_":
     HOPEBRIDGE().run()
+
+    

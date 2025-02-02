@@ -133,5 +133,5 @@ class LoginApp(App):
         sm.add_widget(SignUpScreen(name='Sign-Up'))
         return sm
 
-if _name_ == '_main_':
+if __name__ == '_main_':
     LoginApp().run()
